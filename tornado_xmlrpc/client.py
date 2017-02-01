@@ -8,23 +8,49 @@ from . import __version__, __pyversion__
 from .common import py2xml, xml2py, get_schema
 
 
-class RemoteServerException(Exception):
+class XMLRPCClientException(Exception):
+    pass
+
+
+class InvalidResponse(XMLRPCClientException):
+    pass
+
+
+class RemoteServerException(XMLRPCClientException):
     def __init__(self, message, code=-32500):
         Exception.__init__(self, message)
         self.code = code
 
 
-class InvalidResponse(Exception):
-    pass
+class RemoteMethod(object):
+    __slots__ = '__name', '__handler'
+
+    def __init__(self, method_name, handler):
+        self.__name = method_name
+        self.__handler = handler
+
+    def __call__(self, *args, **kwargs):
+        return self.__handler._remote_call(
+            self.__name, *args, **kwargs
+        )
+
+    def __getattr__(self, method_name):
+        return RemoteMethod(
+            '{}.{}'.format(self.__name, method_name),
+            self.__handler
+        )
+
+    def __repr__(self):
+        return "<RemoteMethod: {0}>".format(self.__name)
 
 
 class ServerProxy(object):
     USER_AGENT = u'Tornado XML-RPC (Python: {0}, version: {1})'.format(__pyversion__, __version__)
 
-    def __init__(self, url, http_client=None, http_params={}):
+    def __init__(self, url, http_client=None, http_params=None):
         self.url = str(url)
         self.client = http_client or AsyncHTTPClient(IOLoop.current())
-        self._http_params = http_params
+        self._http_params = http_params or {}
 
     @staticmethod
     def _make_request(method_name, *args, **kwargs):
@@ -72,7 +98,7 @@ class ServerProxy(object):
         raise InvalidResponse('Respond body of method "%s" not contains any response.', method_name)
 
     @coroutine
-    def __remote_call(self, method_name, *args, **kwargs):
+    def _remote_call(self, method_name, *args, **kwargs):
         req = HTTPRequest(
             str(self.url),
             method='POST',
@@ -87,12 +113,4 @@ class ServerProxy(object):
         raise Return(self._parse_response(response.body, method_name))
 
     def __getattr__(self, method_name):
-        class _Method(object):
-            def __init__(instance, method_name):
-                instance._name = method_name
-            def __call__(instance, *args, **kwargs):
-                return self.__remote_call(instance._name, *args, **kwargs)
-            def __getattr__(instance, method_name):
-                return _Method('{}.{}'.format(instance._name, method_name))
-
-        return _Method(method_name)
+        return RemoteMethod(method_name, self)

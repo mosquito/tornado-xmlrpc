@@ -80,15 +80,19 @@ class ServerProxy(object):
             headers={
                 'Content-Type': u'text/xml',
                 'User-Agent': self.USER_AGENT
-            }
+            }, **self._http_params
         )
         response = yield self.client.fetch(req)
 
         raise Return(self._parse_response(response.body, method_name))
 
     def __getattr__(self, method_name):
-        def method(*args, **kwargs):
-            return self.__remote_call(method_name, *args, **kwargs)
+        class _Method(object):
+            def __init__(instance, method_name):
+                instance._name = method_name
+            def __call__(instance, *args, **kwargs):
+                return self.__remote_call(instance._name, *args, **kwargs)
+            def __getattr__(instance, method_name):
+                return _Method('{}.{}'.format(instance._name, method_name))
 
-        method.__name__ = method_name
-        return method
+        return _Method(method_name)

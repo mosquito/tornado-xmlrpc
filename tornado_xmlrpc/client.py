@@ -21,9 +21,10 @@ class InvalidResponse(Exception):
 class ServerProxy(object):
     USER_AGENT = u'Tornado XML-RPC (Python: {0}, version: {1})'.format(__pyversion__, __version__)
 
-    def __init__(self, url, http_client=None):
+    def __init__(self, url, http_client=None, http_params={}):
         self.url = str(url)
         self.client = http_client or AsyncHTTPClient(IOLoop.current())
+        self._http_params = http_params
 
     @staticmethod
     def _make_request(method_name, *args, **kwargs):

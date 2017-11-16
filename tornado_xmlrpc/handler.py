@@ -59,7 +59,7 @@ class XMLRPCHandler(RequestHandler):
             el_params.append(el_param)
             root.append(el_params)
 
-            result = yield maybe_future(method(*args, **kwargs))
+            result = yield coroutine(method)(*args, **kwargs)
 
             el_value.append(py2xml(result))
         except Exception as e:

@@ -1,9 +1,15 @@
 # encoding: utf-8
 import logging
-from tornado.gen import coroutine, maybe_future
+from tornado.gen import coroutine
 from tornado.web import RequestHandler, HTTPError
 from lxml import etree
 from .common import get_schema, xml2py, py2xml
+
+
+try:
+    from asyncio import coroutine as make_coroutine
+except ImportError:
+    from tornado.gen import coroutine as make_coroutine
 
 
 log = logging.getLogger(__name__)
@@ -59,7 +65,7 @@ class XMLRPCHandler(RequestHandler):
             el_params.append(el_param)
             root.append(el_params)
 
-            result = yield coroutine(method)(*args, **kwargs)
+            result = yield make_coroutine(method)(*args, **kwargs)
 
             el_value.append(py2xml(result))
         except Exception as e:

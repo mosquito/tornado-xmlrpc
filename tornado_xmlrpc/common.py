@@ -5,6 +5,7 @@ import logging
 import os
 from datetime import datetime
 from lxml import etree
+from collections import OrderedDict
 
 
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -134,7 +135,8 @@ PY2XML_TYPES.update({
     Binary: xml_binary,
     bool: xml_bool,
     NoneType: xml_none,
-    dict: xml_dict
+    dict: xml_dict,
+    OrderedDict: xml_dict,
 })
 
 

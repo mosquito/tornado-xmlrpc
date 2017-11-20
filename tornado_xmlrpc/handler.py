@@ -4,6 +4,7 @@ import sys
 from tornado.gen import coroutine, Return
 from tornado.web import RequestHandler, HTTPError
 from lxml import etree
+from collections import OrderedDict
 from .common import get_schema, xml2py, py2xml
 
 
@@ -86,10 +87,14 @@ class XMLRPCHandler(RequestHandler):
         root.append(xml_fault)
         xml_fault.append(xml_value)
 
-        xml_value.append(py2xml({
-            "faultCode": getattr(error, 'code', -32500),
-            "faultString": repr(error),
-        }))
+        xml_value.append(
+            py2xml(
+                OrderedDict((
+                    ("faultCode", getattr(error, 'code', -32500)),
+                    ("faultString", repr(error)),
+                ))
+            )
+        )
 
         return root
 

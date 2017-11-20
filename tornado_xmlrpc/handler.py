@@ -79,6 +79,9 @@ class XMLRPCHandler(RequestHandler):
             pretty_print=cls.DEBUG
         )
 
+    def _get_exception_info(self, exc):
+        return getattr(exc, 'code', -32500), repr(exc)
+
     def _format_exception(self, error):
         root = etree.Element('methodResponse')
         xml_fault = etree.Element('fault')
@@ -87,11 +90,13 @@ class XMLRPCHandler(RequestHandler):
         root.append(xml_fault)
         xml_fault.append(xml_value)
 
+        code, exc_name = self._get_exception_info(error)
+
         xml_value.append(
             py2xml(
                 OrderedDict((
-                    ("faultCode", getattr(error, 'code', -32500)),
-                    ("faultString", repr(error)),
+                    ("faultCode", code),
+                    ("faultString", exc_name),
                 ))
             )
         )
